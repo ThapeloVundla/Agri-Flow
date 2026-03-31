@@ -652,6 +652,27 @@
       text-align: center; opacity: .7;
     }
 
+    .report-block {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+
+    .report-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: .98rem;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    .report-note {
+      font-size: .76rem;
+      color: var(--slate);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
     /* ─── SPINNER ─── */
     .spinner {
       width: 22px; height: 22px;
@@ -847,6 +868,17 @@
       </div>
 
       <p class="ai-disclaimer">Powered by Gemini 2.5 Flash · Always confirm critical decisions with your agronomist</p>
+      <div class="report-block">
+        <div class="report-title">Water Usage Report</div>
+        <div class="report-note" id="report-note">Available after at least 3 logged water-usage timestamps from the 3D timeline.</div>
+        <button class="btn-ai" id="btn-report" onclick="getWaterUsageReport()" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+          Compile Water Usage Report
+        </button>
+        <div class="ai-response empty" id="report-response" style="margin-top:12px;">
+          Add 3 irrigation events to unlock a short AI summary of the farmer's water usage trend.
+        </div>
+      </div>
     </div>
 
   </div>
@@ -870,6 +902,9 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
 // ── STATE ────────────────────────────────────────────────────────────
 let farmData = null;
 let waterState = loadWaterState();
+
+const AI_PLAN_BUTTON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Analyse &amp; Generate Irrigation Plan`;
+const AI_REPORT_BUTTON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg> Compile Water Usage Report`;
 
 // ── INIT ─────────────────────────────────────────────────────────────
 function init() {
@@ -1040,6 +1075,7 @@ function renderWater() {
   const remaining = limit !== null ? Math.max(0, limit - used) : null;
   const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
   renderUsage3D(history, limit);
+  updateReportAvailability(history);
 
   document.getElementById('disp-limit').innerHTML =
     limit !== null ? `${limit.toLocaleString()}<span> m³</span>` : `—`;
@@ -1095,6 +1131,109 @@ function renderUsage3D(history, limit) {
   }).join('');
 }
 
+function updateReportAvailability(history) {
+  const btn = document.getElementById('btn-report');
+  const note = document.getElementById('report-note');
+  const box = document.getElementById('report-response');
+  if (!btn || !note || !box) return;
+
+  const unlocked = history.length >= 3;
+  btn.disabled = !unlocked;
+
+  if (unlocked) {
+    note.textContent = `Ready to compile a short AI report from ${history.length} logged usage timestamps.`;
+    if (box.classList.contains('empty')) {
+      box.textContent = 'The timeline is ready. Generate a concise report on the farmer\'s water-usage pattern.';
+    }
+    return;
+  }
+
+  const remaining = 3 - history.length;
+  note.textContent = `Available after at least 3 logged water-usage timestamps from the 3D timeline. ${remaining} more to go.`;
+  box.className = 'ai-response empty';
+  box.textContent = `Add ${remaining} more irrigation event${remaining === 1 ? '' : 's'} to unlock a short AI summary of the farmer's water usage trend.`;
+}
+
+async function requestGeminiText(prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 900 }
+      })
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
+
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty response from Gemini');
+  return text;
+}
+
+async function getWaterUsageReport() {
+  const btn = document.getElementById('btn-report');
+  const box = document.getElementById('report-response');
+  const note = document.getElementById('report-note');
+  const { limit, used, history } = waterState;
+
+  if (history.length < 3) {
+    updateReportAvailability(history);
+    showToast('Log at least 3 usage events first');
+    return;
+  }
+
+  const timeline = history.map((item) =>
+    `${item.label}: +${item.amount} m3, cumulative total ${item.total} m3`
+  ).join('\n');
+
+  const remaining = limit !== null ? Math.max(0, limit - used) : null;
+  const pct = limit ? ((used / limit) * 100).toFixed(1) : 'unknown';
+
+  const prompt = `You are preparing a short water-usage report for a farmer in South Africa.
+
+Use the irrigation timeline below to write a concise report in 3 short paragraphs or fewer.
+
+Timeline data:
+${timeline}
+
+Water summary:
+- Monthly allocation: ${limit !== null ? limit + ' m3' : 'not set'}
+- Total water used: ${used} m3
+- Water remaining: ${remaining !== null ? remaining + ' m3' : 'unknown'}
+- Allocation used: ${pct}%
+
+Requirements:
+- Mention the overall usage trend across the timestamps.
+- Mention whether usage appears controlled, increasing, or risky.
+- End with one practical recommendation for the farmer.
+- Keep it short and easy to scan.`;
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Compiling Report...';
+  box.className = 'ai-response loading';
+  box.textContent = 'Gemini is compiling a short report from the 3D usage timeline...';
+  note.textContent = `Compiling report from ${history.length} logged timestamps.`;
+
+  try {
+    box.className = 'ai-response';
+    box.textContent = await requestGeminiText(prompt);
+  } catch (err) {
+    box.className = 'ai-response';
+    box.textContent = `Could not compile water-usage report: ${err.message}`;
+  } finally {
+    btn.innerHTML = AI_REPORT_BUTTON;
+    updateReportAvailability(history);
+  }
+}
+
 async function getAIRecommendation() {
   const btn = document.getElementById('btn-ai');
   const box = document.getElementById('ai-response');
@@ -1134,36 +1273,15 @@ Whether the farmer should irrigate right now (yes/no/conditional) and why, based
   box.textContent = '🤖 AI is analysing your sensor data and water usage…';
 
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 900 }
-        })
-      }
-    );
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err?.error?.message || `HTTP ${res.status}`);
-    }
-
-    const json = await res.json();
-    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Empty response from Gemini');
-
     box.className = 'ai-response';
-    box.textContent = text;
+    box.textContent = await requestGeminiText(prompt);
 
   } catch (err) {
     box.className = 'ai-response';
     box.textContent = `❌ Could not get AI recommendation: ${err.message}\n\nPlease check your Gemini API key and network connection.`;
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Analyse &amp; Generate Irrigation Plan`;
+    btn.innerHTML = AI_PLAN_BUTTON;
   }
 }
 
