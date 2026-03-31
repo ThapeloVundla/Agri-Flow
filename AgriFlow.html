@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriFlow – Smart Irrigation Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #062150;
+      --blue:    #1a56db;
+      --sky:     #3b82f6;
+      --aqua:    #0ea5e9;
+      --ice:     #e0f0ff;
+      --white:   #ffffff;
+      --offwhite:#f4f8ff;
+      --mist:    #dbeafe;
+      --slate:   #64748b;
+      --warn:    #f59e0b;
+      --danger:  #ef4444;
+      --safe:    #22c55e;
+      --text:    #0a1628;
+      --border:  #c7ddf9;
+
+      --radius-sm: 10px;
+      --radius:    16px;
+      --radius-lg: 24px;
+      --shadow:    0 4px 24px rgba(26,86,219,.08);
+      --shadow-md: 0 8px 40px rgba(26,86,219,.13);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Lexend', sans-serif;
+      background: var(--offwhite);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── BACKGROUND ─── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% -10%, rgba(59,130,246,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 90% 110%, rgba(14,165,233,.10) 0%, transparent 55%);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.5rem; font-weight: 800;
+      color: var(--navy); text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--blue), var(--aqua));
+      border-radius: 10px;
+      display: grid; place-items: center;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(26,86,219,.35);
+    }
+
+    .logo span { color: var(--aqua); }
+
+    .header-right {
+      display: flex; align-items: center; gap: 14px;
+    }
+
+    .farm-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--ice); border: 1px solid var(--mist);
+      padding: 6px 14px; border-radius: 50px;
+      font-size: .8rem; font-weight: 500; color: var(--blue);
+    }
+
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--safe);
+      box-shadow: 0 0 0 0 rgba(34,197,94,.5);
+      animation: pulse-ring 2s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.5); }
+      70%  { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+
+    .btn-refresh {
+      background: var(--blue); color: var(--white);
+      border: none; border-radius: var(--radius-sm);
+      padding: 8px 18px; font-family: 'Lexend', sans-serif;
+      font-size: .82rem; font-weight: 500; cursor: pointer;
+      display: flex; align-items: center; gap: 7px;
+      transition: all .2s; letter-spacing: .01em;
+    }
+
+    .btn-refresh:hover { background: var(--navy); transform: translateY(-1px); box-shadow: var(--shadow); }
+    .btn-refresh:active { transform: translateY(0); }
+
+    /* ─── MAIN LAYOUT ─── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 36px 24px 60px;
+    }
+
+    /* ─── SECTION TITLES ─── */
+    .section-label {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: .72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .14em;
+      color: var(--slate); margin-bottom: 14px;
+    }
+
+    /* ─── HERO STRIP ─── */
+    .hero-strip {
+      background: linear-gradient(135deg, var(--navy) 0%, #0a3378 55%, #1040a0 100%);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      margin-bottom: 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: relative; overflow: hidden;
+      box-shadow: 0 8px 40px rgba(6,33,80,.25);
+    }
+
+    .hero-strip::after {
+      content: '💧';
+      position: absolute; right: -20px; bottom: -30px;
+      font-size: 9rem; opacity: .06;
+      transform: rotate(-15deg);
+    }
+
+    .hero-text h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.75rem; font-weight: 800;
+      color: var(--white); line-height: 1.2;
+    }
+
+    .hero-text p {
+      font-size: .88rem; color: rgba(255,255,255,.6);
+      margin-top: 6px; font-weight: 300;
+    }
+
+    .hero-date {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: var(--radius-sm);
+      padding: 10px 20px; text-align: right;
+    }
+
+    .hero-date .month {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.1rem; font-weight: 600; color: var(--white);
+    }
+
+    .hero-date .detail {
+      font-size: .75rem; color: rgba(255,255,255,.55);
+      margin-top: 3px;
+    }
+
+    /* ─── SENSOR GRID ─── */
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .sensor-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      position: relative; overflow: hidden;
+      transition: transform .2s, box-shadow .2s;
+      animation: fadeUp .5s ease both;
+    }
+
+    .sensor-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+
+    .sensor-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--blue), var(--aqua));
+    }
+
+    .sensor-card:nth-child(1) { animation-delay: .05s; }
+    .sensor-card:nth-child(2) { animation-delay: .1s; }
+    .sensor-card:nth-child(3) { animation-delay: .15s; }
+
+    .sensor-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 1.2rem; margin-bottom: 16px;
+    }
+
+    .icon-temp  { background: #fff0e0; }
+    .icon-hum   { background: #e0f0ff; }
+    .icon-vpd   { background: #e8f5e9; }
+
+    .sensor-label {
+      font-size: .74rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--slate); margin-bottom: 6px;
+    }
+
+    .sensor-value {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 2.4rem; font-weight: 800;
+      color: var(--navy); line-height: 1;
+    }
+
+    .sensor-value sup { font-size: 1rem; font-weight: 600; color: var(--slate); }
+
+    .sensor-status {
+      margin-top: 10px; font-size: .78rem;
+      color: var(--slate); font-weight: 400;
+    }
+
+    .sensor-status b { color: var(--blue); }
+
+    /* loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, #e8eef8 25%, #f4f8ff 50%, #e8eef8 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px; height: 1em;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ─── TWO-COLUMN BOTTOM ─── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    /* ─── CARD SHELL ─── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      animation: fadeUp .5s ease both;
+    }
+
+    .card:nth-child(1) { animation-delay: .2s; }
+    .card:nth-child(2) { animation-delay: .3s; }
+
+    .card-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--navy); margin-bottom: 22px;
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .card-title .ct-icon {
+      width: 32px; height: 32px; border-radius: 9px;
+      background: var(--ice);
+      display: grid; place-items: center; font-size: .9rem;
+    }
+
+    /* ─── WATER STATS ROW ─── */
+    .water-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 24px;
+    }
+
+    .wstat {
+      background: var(--offwhite);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 12px; text-align: center;
+    }
+
+    .wstat-label {
+      font-size: .7rem; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--slate);
+      font-weight: 500; margin-bottom: 5px;
+    }
+
+    .wstat-val {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.45rem; font-weight: 800; color: var(--navy);
+    }
+
+    .wstat-val span { font-size: .7rem; font-weight: 400; color: var(--slate); }
+
+    /* ─── PROGRESS BAR ─── */
+    .prog-wrap { margin-bottom: 22px; }
+
+    .prog-header {
+      display: flex; justify-content: space-between;
+      font-size: .78rem; color: var(--slate);
+      margin-bottom: 8px; font-weight: 500;
+    }
+
+    .prog-track {
+      width: 100%; height: 14px;
+      background: var(--ice);
+      border-radius: 99px; overflow: hidden;
+      border: 1px solid var(--mist);
+    }
+
+    .prog-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--blue), var(--aqua));
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+      position: relative;
+    }
+
+    .prog-fill.warn {
+      background: linear-gradient(90deg, var(--warn), #fb923c);
+    }
+
+    .prog-fill.danger {
+      background: linear-gradient(90deg, var(--danger), #f97316);
+    }
+
+    /* ─── STATUS BADGE ─── */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 16px; border-radius: 50px;
+      font-size: .8rem; font-weight: 600;
+      margin-bottom: 22px;
+      transition: all .3s;
+    }
+
+    .status-badge.safe    { background: #dcfce7; color: #15803d; }
+    .status-badge.warn    { background: #fef9c3; color: #a16207; }
+    .status-badge.danger  { background: #fee2e2; color: #b91c1c; }
+
+    /* ─── SLIDER ─── */
+    .slider-section { margin-top: 8px; }
+
+    .slider-header {
+      font-size: .8rem; font-weight: 500;
+      color: var(--slate); margin-bottom: 10px;
+    }
+
+    .slider-row { display: flex; align-items: center; gap: 14px; }
+
+    input[type=range] {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 6px; border-radius: 99px;
+      background: var(--mist); outline: none; cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--blue);
+      box-shadow: 0 2px 8px rgba(26,86,219,.25);
+      cursor: pointer; transition: transform .15s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+    .slider-val {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1.1rem; font-weight: 700; color: var(--navy);
+      min-width: 72px; text-align: right;
+    }
+
+    .monthly-limit-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .monthly-limit-row label {
+      font-size: .8rem; font-weight: 500; color: var(--slate);
+      white-space: nowrap;
+    }
+
+    .limit-input {
+      flex: 1; border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 12px; font-family: 'Lexend', sans-serif;
+      font-size: .88rem; color: var(--navy);
+      outline: none; transition: border .2s;
+    }
+
+    .limit-input:focus { border-color: var(--blue); }
+
+    .btn-log {
+      background: var(--blue); color: var(--white);
+      border: none; border-radius: var(--radius-sm);
+      padding: 9px 20px; font-family: 'Lexend', sans-serif;
+      font-size: .82rem; font-weight: 500; cursor: pointer;
+      transition: all .2s; white-space: nowrap;
+    }
+
+    .btn-log:hover { background: var(--navy); }
+
+    /* ─── AI PANEL ─── */
+    .btn-ai {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--navy), var(--blue));
+      color: var(--white); border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; display: flex;
+      align-items: center; justify-content: center; gap: 10px;
+      transition: all .25s; letter-spacing: .02em;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(26,86,219,.25);
+    }
+
+    .btn-ai:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(26,86,219,.35); }
+    .btn-ai:active { transform: translateY(0); }
+    .btn-ai:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .ai-response {
+      background: var(--offwhite);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 18px;
+      font-size: .84rem; line-height: 1.75;
+      color: var(--text); min-height: 80px;
+      white-space: pre-wrap;
+    }
+
+    .ai-response.loading {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--slate); font-style: italic;
+    }
+
+    .ai-response.empty {
+      display: flex; align-items: center; justify-content: center;
+      color: var(--slate); font-size: .82rem;
+    }
+
+    .ai-disclaimer {
+      margin-top: 10px; font-size: .72rem; color: var(--slate);
+      text-align: center; opacity: .7;
+    }
+
+    /* ─── SPINNER ─── */
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── TOAST ─── */
+    .toast {
+      position: fixed; bottom: 28px; right: 28px;
+      background: var(--navy); color: var(--white);
+      padding: 12px 22px; border-radius: var(--radius-sm);
+      font-size: .83rem; font-weight: 500;
+      box-shadow: var(--shadow-md);
+      transform: translateY(20px); opacity: 0;
+      transition: all .3s; z-index: 999;
+      pointer-events: none;
+    }
+
+    .toast.show { transform: translateY(0); opacity: 1; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 800px) {
+      .sensor-grid { grid-template-columns: 1fr 1fr; }
+      .bottom-grid  { grid-template-columns: 1fr; }
+      .hero-strip   { flex-direction: column; gap: 16px; align-items: flex-start; }
+      header { padding: 0 16px; }
+      main   { padding: 20px 14px 40px; }
+    }
+
+    @media (max-width: 500px) {
+      .sensor-grid { grid-template-columns: 1fr; }
+      .water-stats { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">💧</div>
+    Agri<span>Flow</span>
+  </a>
+  <div class="header-right">
+    <div class="farm-badge">
+      <div class="pulse-dot"></div>
+      <span id="farm-name-badge">Loading farm…</span>
+    </div>
+    <button class="btn-refresh" onclick="loadFarmData()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<!-- ─── MAIN ─── -->
+<main>
+
+  <!-- Hero Strip -->
+  <div class="hero-strip" style="animation: fadeUp .5s ease both;">
+    <div class="hero-text">
+      <h1>Smart Irrigation &amp; Water Compliance</h1>
+      <p>Real-time sensor data • DWS water licence tracking • AI-powered irrigation guidance</p>
+    </div>
+    <div class="hero-date">
+      <div class="month" id="hero-month">—</div>
+      <div class="detail">Allocation period</div>
+    </div>
+  </div>
+
+  <!-- Sensor cards -->
+  <p class="section-label">Live Field Sensors</p>
+  <div class="sensor-grid">
+    <div class="sensor-card" id="card-temp">
+      <div class="sensor-icon icon-temp">🌡️</div>
+      <div class="sensor-label">Temperature</div>
+      <div class="sensor-value" id="val-temp"><span class="skeleton" style="width:70px;">&nbsp;</span></div>
+      <div class="sensor-status" id="status-temp">Fetching data…</div>
+    </div>
+    <div class="sensor-card" id="card-hum">
+      <div class="sensor-icon icon-hum">💦</div>
+      <div class="sensor-label">Relative Humidity</div>
+      <div class="sensor-value" id="val-hum"><span class="skeleton" style="width:70px;">&nbsp;</span></div>
+      <div class="sensor-status" id="status-hum">Fetching data…</div>
+    </div>
+    <div class="sensor-card" id="card-vpd">
+      <div class="sensor-icon icon-vpd">🌿</div>
+      <div class="sensor-label">Vapour Pressure Deficit</div>
+      <div class="sensor-value" id="val-vpd"><span class="skeleton" style="width:70px;">&nbsp;</span></div>
+      <div class="sensor-status" id="status-vpd">Fetching data…</div>
+    </div>
+  </div>
+
+  <!-- Bottom grid -->
+  <div class="bottom-grid">
+
+    <!-- ─── WATER MANAGEMENT ─── -->
+    <div class="card" id="water-card">
+      <div class="card-title">
+        <div class="ct-icon">🪣</div>
+        Water Licence Tracker
+      </div>
+
+      <div class="monthly-limit-row">
+        <label for="limit-input">Monthly Limit (m³):</label>
+        <input class="limit-input" id="limit-input" type="number" min="0" placeholder="e.g. 5000" />
+        <button class="btn-log" onclick="saveLimit()">Set</button>
+      </div>
+
+      <div class="water-stats">
+        <div class="wstat">
+          <div class="wstat-label">Monthly Limit</div>
+          <div class="wstat-val" id="disp-limit">—<span> m³</span></div>
+        </div>
+        <div class="wstat">
+          <div class="wstat-label">Used</div>
+          <div class="wstat-val" id="disp-used">0<span> m³</span></div>
+        </div>
+        <div class="wstat">
+          <div class="wstat-label">Remaining</div>
+          <div class="wstat-val" id="disp-remaining">—<span> m³</span></div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="prog-wrap">
+        <div class="prog-header">
+          <span>Water Allocation Used</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill" id="prog-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="status-badge safe" id="compliance-badge">
+        ✅ Compliant — Within Safe Limits
+      </div>
+
+      <!-- Slider -->
+      <div class="slider-section">
+        <div class="slider-header">Log irrigation event (move slider → tap "Add Usage"):</div>
+        <div class="slider-row">
+          <input type="range" id="usage-slider" min="0" max="500" value="0" step="5" oninput="updateSliderDisplay()" />
+          <div class="slider-val"><span id="slider-disp">0</span> m³</div>
+        </div>
+        <button class="btn-log" style="width:100%;margin-top:12px;" onclick="logUsage()">+ Add Usage</button>
+      </div>
+    </div>
+
+    <!-- ─── AI ADVISOR ─── -->
+    <div class="card" id="ai-card">
+      <div class="card-title">
+        <div class="ct-icon">🤖</div>
+        AI Irrigation Advisor
+      </div>
+
+      <button class="btn-ai" id="btn-ai" onclick="getAIRecommendation()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        Analyse &amp; Generate Irrigation Plan
+      </button>
+
+      <div class="ai-response empty" id="ai-response">
+        💧 Tap the button above to get your personalised irrigation recommendation based on live sensor data and your current water usage.
+      </div>
+
+      <p class="ai-disclaimer">Powered by Gemini 2.5 Flash · Always confirm critical decisions with your agronomist</p>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ─── SCRIPT ─── -->
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://jeedaqlspsktizapyryb.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplZWRhcWxzcHNrdGl6YXB5cnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTI2NjYsImV4cCI6MjA5MDQ2ODY2Nn0.5RY8E_4lrb8YHJo_6qfykV_KQqZTS8VmahLSFMev0Xk';
+const GEMINI_KEY    = 'AIzaSyBMFNzV8Kt1tJLu1Fv4vqM7jjqSN9ttFoU';
+const GEMINI_MODEL  = 'gemini-2.5-flash';
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ── STATE ────────────────────────────────────────────────────────────
+let farmData = null;
+let waterState = loadWaterState();
+
+// ── INIT ─────────────────────────────────────────────────────────────
+function init() {
+  const now = new Date();
+  document.getElementById('hero-month').textContent =
+    now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  // Restore limit input
+  if (waterState.limit) {
+    document.getElementById('limit-input').value = waterState.limit;
+  }
+  renderWater();
+  loadFarmData();
+}
+
+// ── SUPABASE FETCH ────────────────────────────────────────────────────
+async function loadFarmData() {
+  try {
+    const { data, error } = await fetchLatestFarmReading();
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      showSensorError('No sensor readings found in the database.');
+      return;
+    }
+
+    farmData = data[0];
+    renderSensors(farmData);
+    showToast('✅ Sensor data refreshed');
+  } catch (err) {
+    showSensorError('Could not connect to Supabase: ' + err.message);
+  }
+}
+
+async function fetchLatestFarmReading() {
+  const orderColumns = ['created_at', 'timestamp', 'recorded_at', 'updated_at', 'id'];
+  let lastError = null;
+
+  for (const column of orderColumns) {
+    const response = await supabaseClient
+      .from('agrifarm_readings')
+      .select('*')
+      .order(column, { ascending: false })
+      .limit(1);
+
+    if (!response.error) {
+      return response;
+    }
+
+    const message = response.error.message ?? '';
+    const details = response.error.details ?? '';
+    const hint = response.error.hint ?? '';
+    const combined = `${message} ${details} ${hint}`.toLowerCase();
+
+    if (
+      combined.includes(column.toLowerCase()) ||
+      combined.includes('column') ||
+      combined.includes('order')
+    ) {
+      lastError = response.error;
+      continue;
+    }
+
+    return response;
+  }
+
+  const fallback = await supabaseClient
+    .from('agrifarm_readings')
+    .select('*')
+    .limit(1);
+
+  if (fallback.error) {
+    return fallback;
+  }
+
+  return fallback.data && fallback.data.length > 0
+    ? { data: fallback.data, error: null }
+    : { data: fallback.data, error: lastError };
+}
+
+function renderSensors(r) {
+  // Farm badge
+  document.getElementById('farm-name-badge').textContent =
+    `${r.farm_id ?? 'Farm'} · ${r.farm_type ?? 'General'}`;
+
+  // Temperature
+  document.getElementById('val-temp').innerHTML =
+    `${parseFloat(r.temp_c).toFixed(1)}<sup>°C</sup>`;
+  const tempStatus = r.temp_c > 35 ? '🔴 High – plants under heat stress' :
+    r.temp_c > 28 ? '🟡 Elevated – monitor moisture' :
+    '🟢 Optimal range';
+  document.getElementById('status-temp').innerHTML = `<b>${tempStatus}</b>`;
+
+  // Humidity
+  document.getElementById('val-hum').innerHTML =
+    `${parseFloat(r.humidity_pct).toFixed(0)}<sup>%</sup>`;
+  const humStatus = r.humidity_pct < 40 ? '🔴 Low – high transpiration risk' :
+    r.humidity_pct > 80 ? '🟡 High – fungal disease risk' :
+    '🟢 Good range';
+  document.getElementById('status-hum').innerHTML = `<b>${humStatus}</b>`;
+
+  // VPD
+  document.getElementById('val-vpd').innerHTML =
+    `${parseFloat(r.vpd_kpa).toFixed(2)}<sup> kPa</sup>`;
+  const vpdStatus = r.vpd_kpa > 2.0 ? '🔴 Very high – urgent irrigation needed' :
+    r.vpd_kpa > 1.2 ? '🟡 Moderate – consider irrigating' :
+    r.vpd_kpa > 0.4 ? '🟢 Ideal growing conditions' :
+    '🔵 Low – reduce irrigation';
+  document.getElementById('status-vpd').innerHTML = `<b>${vpdStatus}</b>`;
+}
+
+function showSensorError(msg) {
+  ['val-temp','val-hum','val-vpd'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  ['status-temp','status-hum','status-vpd'].forEach(id => {
+    document.getElementById(id).textContent = msg;
+  });
+  document.getElementById('farm-name-badge').textContent = 'Connection error';
+}
+
+// ── WATER MANAGEMENT ─────────────────────────────────────────────────
+function loadWaterState() {
+  try {
+    const key = `agriflow_${monthKey()}`;
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : { limit: null, used: 0 };
+  } catch { return { limit: null, used: 0 }; }
+}
+
+function saveWaterState() {
+  try {
+    localStorage.setItem(`agriflow_${monthKey()}`, JSON.stringify(waterState));
+  } catch {}
+}
+
+function monthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function saveLimit() {
+  const val = parseFloat(document.getElementById('limit-input').value);
+  if (isNaN(val) || val <= 0) { showToast('⚠️ Enter a valid limit'); return; }
+  waterState.limit = val;
+  saveWaterState(); renderWater();
+  showToast(`✅ Limit set to ${val} m³`);
+}
+
+function updateSliderDisplay() {
+  const v = document.getElementById('usage-slider').value;
+  document.getElementById('slider-disp').textContent = v;
+}
+
+function logUsage() {
+  const add = parseFloat(document.getElementById('usage-slider').value);
+  if (add <= 0) { showToast('Move the slider first'); return; }
+  waterState.used += add;
+  saveWaterState(); renderWater();
+  document.getElementById('usage-slider').value = 0;
+  document.getElementById('slider-disp').textContent = '0';
+  showToast(`💧 Logged ${add} m³`);
+}
+
+function renderWater() {
+  const { limit, used } = waterState;
+  const remaining = limit !== null ? Math.max(0, limit - used) : null;
+  const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
+
+  document.getElementById('disp-limit').innerHTML =
+    limit !== null ? `${limit.toLocaleString()}<span> m³</span>` : `—`;
+  document.getElementById('disp-used').innerHTML =
+    `${used.toLocaleString()}<span> m³</span>`;
+  document.getElementById('disp-remaining').innerHTML =
+    remaining !== null ? `${remaining.toLocaleString()}<span> m³</span>` : `—`;
+  document.getElementById('prog-pct').textContent = `${pct.toFixed(1)}%`;
+
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = pct + '%';
+  fill.className = 'prog-fill' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+
+  const badge = document.getElementById('compliance-badge');
+  if (pct >= 90) {
+    badge.className = 'status-badge danger';
+    badge.textContent = '🚨 BREACH RISK — Approaching Licence Limit';
+  } else if (pct >= 70) {
+    badge.className = 'status-badge warn';
+    badge.textContent = '⚠️ Caution — 70%+ of Allocation Used';
+  } else {
+    badge.className = 'status-badge safe';
+    badge.textContent = '✅ Compliant — Within Safe Limits';
+  }
+}
+
+// ── GEMINI AI ─────────────────────────────────────────────────────────
+async function getAIRecommendation() {
+  const btn = document.getElementById('btn-ai');
+  const box = document.getElementById('ai-response');
+
+  if (!farmData) {
+    showToast('⚠️ Wait for sensor data to load first');
+    return;
+  }
+
+  const { limit, used } = waterState;
+  const remaining = limit !== null ? Math.max(0, limit - used) : null;
+  const pct = limit ? ((used / limit) * 100).toFixed(1) : 'unknown';
+
+  const prompt = `You are an expert DWS (Department of Water and Sanitation, South Africa) water-licence compliance advisor helping a farmer manage their irrigation responsibly.
+
+Current field sensor readings:
+- Temperature: ${farmData.temp_c}°C
+- Relative Humidity: ${farmData.humidity_pct}%
+- Vapour Pressure Deficit (VPD): ${farmData.vpd_kpa} kPa
+- Farm ID: ${farmData.farm_id ?? 'Unknown'} | Type: ${farmData.farm_type ?? 'Unknown'}
+
+Current water-licence status:
+- Monthly allocation: ${limit !== null ? limit + ' m³' : 'not set'}
+- Water used so far this month: ${used} m³
+- Water remaining: ${remaining !== null ? remaining + ' m³' : 'unknown'}
+- Allocation used: ${pct}%
+
+Based on the farmer's water usage, state in one sentence how the farmer should irrigate to stay compliant to DWS. Start the sentece with "Based on you water usage and soil Data you should..."
+
+Please provide a clear, practical response covering:
+Whether the farmer should irrigate right now (yes/no/conditional) and why, based on the VPD, humidity and temperature`;
+
+  // Loading state
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Analysing…';
+  box.className = 'ai-response loading';
+  box.textContent = '🤖 AI is analysing your sensor data and water usage…';
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 900 }
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err?.error?.message || `HTTP ${res.status}`);
+    }
+
+    const json = await res.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Empty response from Gemini');
+
+    box.className = 'ai-response';
+    box.textContent = text;
+
+  } catch (err) {
+    box.className = 'ai-response';
+    box.textContent = `❌ Could not get AI recommendation: ${err.message}\n\nPlease check your Gemini API key and network connection.`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Analyse &amp; Generate Irrigation Plan`;
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── BOOT ─────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
