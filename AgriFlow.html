@@ -801,22 +801,11 @@ function showSensorError(msg) {
 
 // ── WATER MANAGEMENT ─────────────────────────────────────────────────
 function loadWaterState() {
-  try {
-    const key = `agriflow_${monthKey()}`;
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : { limit: null, used: 0 };
-  } catch { return { limit: null, used: 0 }; }
+  return { limit: null, used: 0 };
 }
 
 function saveWaterState() {
-  try {
-    localStorage.setItem(`agriflow_${monthKey()}`, JSON.stringify(waterState));
-  } catch {}
-}
-
-function monthKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  return;
 }
 
 function saveLimit() {
