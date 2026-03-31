@@ -363,6 +363,189 @@
     .status-badge.danger  { background: #fee2e2; color: #b91c1c; }
 
     /* ─── SLIDER ─── */
+    .usage-3d-card {
+      margin: 18px 0 22px;
+      padding: 18px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background:
+        linear-gradient(180deg, rgba(224,240,255,.95), rgba(255,255,255,.98)),
+        radial-gradient(circle at top left, rgba(14,165,233,.18), transparent 45%);
+      overflow: hidden;
+    }
+
+    .usage-3d-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .usage-3d-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .usage-3d-note {
+      font-size: .74rem;
+      color: var(--slate);
+      line-height: 1.5;
+      max-width: 240px;
+      text-align: right;
+    }
+
+    .usage-3d-scene {
+      position: relative;
+      min-height: 260px;
+      padding: 20px 14px 56px;
+      border-radius: calc(var(--radius) - 4px);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.9), rgba(224,240,255,.55)),
+        repeating-linear-gradient(90deg, rgba(26,86,219,.05) 0 1px, transparent 1px 52px);
+      perspective: 1100px;
+      transform-style: preserve-3d;
+    }
+
+    .usage-3d-grid {
+      position: absolute;
+      inset: 54px 10px 40px 10px;
+      border-left: 1px solid rgba(100,116,139,.25);
+      border-bottom: 1px solid rgba(100,116,139,.25);
+      transform: rotateX(62deg) rotateZ(-28deg);
+      transform-origin: bottom left;
+      background:
+        linear-gradient(rgba(26,86,219,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(26,86,219,.08) 1px, transparent 1px);
+      background-size: 44px 44px;
+      border-radius: 14px;
+      pointer-events: none;
+    }
+
+    .usage-3d-bars {
+      height: 100%;
+      display: flex;
+      align-items: end;
+      gap: 14px;
+      overflow-x: auto;
+      overflow-y: visible;
+      padding-bottom: 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .usage-3d-bars::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .usage-3d-bars::-webkit-scrollbar-thumb {
+      background: rgba(59,130,246,.25);
+      border-radius: 999px;
+    }
+
+    .usage-3d-empty {
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--slate);
+      font-size: .84rem;
+      line-height: 1.6;
+      border: 1px dashed rgba(100,116,139,.25);
+      border-radius: 18px;
+      background: rgba(255,255,255,.58);
+    }
+
+    .usage-bar-wrap {
+      flex: 0 0 72px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: end;
+      min-height: 100%;
+    }
+
+    .usage-bar-3d {
+      position: relative;
+      width: 44px;
+      min-height: 28px;
+      border-radius: 10px 10px 5px 5px;
+      background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+      box-shadow: 0 18px 28px rgba(29,78,216,.22);
+      transform-style: preserve-3d;
+      transform: rotateX(-18deg) rotateY(-28deg);
+      transition: height .45s ease, transform .35s ease;
+      animation: growBar .55s ease both;
+    }
+
+    .usage-bar-3d::before,
+    .usage-bar-3d::after {
+      content: '';
+      position: absolute;
+      display: block;
+      border-radius: inherit;
+    }
+
+    .usage-bar-3d::before {
+      inset: -10px 0 auto 0;
+      height: 10px;
+      background: linear-gradient(90deg, #bae6fd, #7dd3fc);
+      transform: rotateX(90deg) translateZ(5px);
+      transform-origin: bottom;
+      border-radius: 10px 10px 0 0;
+    }
+
+    .usage-bar-3d::after {
+      top: 4px;
+      right: -12px;
+      width: 12px;
+      height: calc(100% - 4px);
+      background: linear-gradient(180deg, #1e40af, #1e3a8a);
+      transform: rotateY(90deg) translateZ(6px);
+      transform-origin: left;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .usage-bar-wrap:hover .usage-bar-3d {
+      transform: rotateX(-12deg) rotateY(-20deg) translateY(-4px);
+    }
+
+    .usage-bar-value {
+      margin-bottom: 12px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--navy);
+      white-space: nowrap;
+    }
+
+    .usage-bar-label {
+      margin-top: 12px;
+      text-align: center;
+      font-size: .72rem;
+      line-height: 1.45;
+      color: var(--slate);
+    }
+
+    .usage-bar-label strong {
+      display: block;
+      color: var(--navy);
+      font-size: .76rem;
+    }
+
+    @keyframes growBar {
+      from {
+        opacity: 0;
+        transform: rotateX(-18deg) rotateY(-28deg) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: rotateX(-18deg) rotateY(-28deg) translateY(0);
+      }
+    }
+
     .slider-section { margin-top: 8px; }
 
     .slider-header {
@@ -507,11 +690,16 @@
       .hero-strip   { flex-direction: column; gap: 16px; align-items: flex-start; }
       header { padding: 0 16px; }
       main   { padding: 20px 14px 40px; }
+      .usage-3d-header { flex-direction: column; align-items: flex-start; }
+      .usage-3d-note { text-align: left; max-width: none; }
     }
 
     @media (max-width: 500px) {
       .sensor-grid { grid-template-columns: 1fr; }
       .water-stats { grid-template-columns: 1fr 1fr; }
+      .usage-bar-wrap { flex-basis: 62px; }
+      .usage-bar-3d { width: 38px; }
+      .usage-3d-scene { min-height: 230px; padding-left: 8px; padding-right: 8px; }
     }
   </style>
 </head>
@@ -618,6 +806,17 @@
       <!-- Status -->
       <div class="status-badge safe" id="compliance-badge">
         ✅ Compliant — Within Safe Limits
+      </div>
+
+      <div class="usage-3d-card">
+        <div class="usage-3d-header">
+          <div class="usage-3d-title">3D Usage Timeline</div>
+          <div class="usage-3d-note">Each irrigation event becomes a new timestamped column based on cumulative water used.</div>
+        </div>
+        <div class="usage-3d-scene">
+          <div class="usage-3d-grid"></div>
+          <div class="usage-3d-bars" id="usage-3d-bars"></div>
+        </div>
       </div>
 
       <!-- Slider -->
@@ -801,7 +1000,7 @@ function showSensorError(msg) {
 
 // ── WATER MANAGEMENT ─────────────────────────────────────────────────
 function loadWaterState() {
-  return { limit: null, used: 0 };
+  return { limit: null, used: 0, history: [] };
 }
 
 function saveWaterState() {
@@ -825,6 +1024,11 @@ function logUsage() {
   const add = parseFloat(document.getElementById('usage-slider').value);
   if (add <= 0) { showToast('Move the slider first'); return; }
   waterState.used += add;
+  waterState.history.push({
+    label: `Timestamp ${waterState.history.length + 1}`,
+    amount: add,
+    total: waterState.used
+  });
   saveWaterState(); renderWater();
   document.getElementById('usage-slider').value = 0;
   document.getElementById('slider-disp').textContent = '0';
@@ -832,9 +1036,10 @@ function logUsage() {
 }
 
 function renderWater() {
-  const { limit, used } = waterState;
+  const { limit, used, history } = waterState;
   const remaining = limit !== null ? Math.max(0, limit - used) : null;
   const pct = limit ? Math.min(100, (used / limit) * 100) : 0;
+  renderUsage3D(history, limit);
 
   document.getElementById('disp-limit').innerHTML =
     limit !== null ? `${limit.toLocaleString()}<span> m³</span>` : `—`;
@@ -862,6 +1067,34 @@ function renderWater() {
 }
 
 // ── GEMINI AI ─────────────────────────────────────────────────────────
+function renderUsage3D(history, limit) {
+  const container = document.getElementById('usage-3d-bars');
+  if (!history.length) {
+    container.innerHTML = `
+      <div class="usage-3d-empty">
+        Add your first irrigation event to see a responsive 3D usage profile.
+      </div>
+    `;
+    return;
+  }
+
+  const maxValue = Math.max(...history.map(item => item.total), limit || 0, 1);
+
+  container.innerHTML = history.map((item) => {
+    const height = Math.max(28, Math.round((item.total / maxValue) * 150) + 24);
+    return `
+      <div class="usage-bar-wrap">
+        <div class="usage-bar-value">${item.total.toLocaleString()} mÂ³</div>
+        <div class="usage-bar-3d" style="height:${height}px"></div>
+        <div class="usage-bar-label">
+          <strong>${item.label}</strong>
+          +${item.amount.toLocaleString()} mÂ³
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 async function getAIRecommendation() {
   const btn = document.getElementById('btn-ai');
   const box = document.getElementById('ai-response');
