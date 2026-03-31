@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Lexend:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="./config.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -659,10 +660,11 @@
 <!-- ─── SCRIPT ─── -->
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://jeedaqlspsktizapyryb.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImplZWRhcWxzcHNrdGl6YXB5cnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4OTI2NjYsImV4cCI6MjA5MDQ2ODY2Nn0.5RY8E_4lrb8YHJo_6qfykV_KQqZTS8VmahLSFMev0Xk';
-const GEMINI_KEY    = 'AIzaSyBMFNzV8Kt1tJLu1Fv4vqM7jjqSN9ttFoU';
-const GEMINI_MODEL  = 'gemini-2.5-flash';
+const APP_CONFIG    = window.APP_CONFIG || {};
+const SUPABASE_URL  = APP_CONFIG.SUPABASE_URL || '';
+const SUPABASE_ANON = APP_CONFIG.SUPABASE_ANON_KEY || '';
+const GEMINI_KEY    = APP_CONFIG.GEMINI_API_KEY || '';
+const GEMINI_MODEL  = APP_CONFIG.GEMINI_MODEL || 'gemini-2.5-flash';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -672,6 +674,12 @@ let waterState = loadWaterState();
 
 // ── INIT ─────────────────────────────────────────────────────────────
 function init() {
+  if (!SUPABASE_URL || !SUPABASE_ANON || !GEMINI_KEY) {
+    showToast('Missing config. Run npm run build:config first.');
+    showSensorError('App configuration is missing. Generate config.js from .env.');
+    return;
+  }
+
   const now = new Date();
   document.getElementById('hero-month').textContent =
     now.toLocaleString('default', { month: 'long', year: 'numeric' });

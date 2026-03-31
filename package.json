@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build:config": "node scripts/generate-config.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.0"
   }
