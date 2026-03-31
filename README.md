@@ -1,3 +1,11 @@
+Developed by
+
+Thapelo Vundla - Programmer/Developer
+Enrique Thomas - Hardware
+Rufaro - Chipoyera - Enthusiast
+Lwandile Mangali - Designer
+Sisanda Madikizela - Programmer/Developer
+
 # Agri-Flow
 
 Agri-Flow is a browser-based smart irrigation dashboard for monitoring farm conditions, tracking water allocation usage, and generating AI-assisted irrigation guidance.
